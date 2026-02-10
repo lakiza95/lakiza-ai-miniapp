@@ -1,113 +1,160 @@
-// Инициализация Telegram Mini App
 const tg = window.Telegram.WebApp;
-tg.expand(); // Разворачиваем на весь экран
+tg.expand();
 
-// --- НАСТРОЙКИ ---
-// Сюда вставь URL Production Webhook из n8n (тип POST)
-const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';
+// CONFIG
+const N8N_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';
 
+// STATE
+let currentSessionId = null; // ID ТЕКУЩЕЙ СЕССИИ (null если нет)
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
 
-const recordBtn = document.getElementById('recordBtn');
-const btnText = document.getElementById('btnText');
-const statusText = document.getElementById('status');
-const visualizer = document.getElementById('visualizer');
+// DOM Elements
+const screens = {
+    welcome: document.getElementById('screen-welcome'),
+    levels: document.getElementById('screen-levels'),
+    chat: document.getElementById('screen-chat'),
+    result: document.getElementById('screen-result')
+};
+const loader = document.getElementById('loader');
 
-recordBtn.addEventListener('click', async () => {
-    if (!isRecording) {
-        startRecording();
-    } else {
-        stopRecording();
+// --- NAVIGATION ---
+function showScreen(name) {
+    Object.values(screens).forEach(el => el.classList.add('hidden'));
+    screens[name].classList.remove('hidden');
+}
+
+function toggleLoader(show) {
+    if(show) loader.classList.remove('hidden');
+    else loader.classList.add('hidden');
+}
+
+function goToLevels() {
+    showScreen('levels');
+}
+
+function restartApp() {
+    currentSessionId = null; // Сбрасываем сессию
+    showScreen('welcome');
+}
+
+// --- LOGIC: START SESSION ---
+async function startSession(level) {
+    toggleLoader(true);
+    
+    // 1. Готовим данные
+    const payload = {
+        action: 'start_session',
+        level: level,
+        userData: tg.initDataUnsafe
+    };
+
+    try {
+        // 2. Отправляем в n8n запрос на создание сессии
+        const response = await fetch(N8N_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        // 3. Сохраняем ID сессии, который прислал n8n
+        currentSessionId = data.session_id; 
+        
+        // 4. Переходим в чат и играем первое аудио
+        showScreen('chat');
+        document.getElementById('sessionLevelBadge').innerText = level;
+        playAudio(data.audio);
+        updateStatus("Ваш черед говорить!");
+
+    } catch (e) {
+        alert("Ошибка старта: " + e.message);
+    } finally {
+        toggleLoader(false);
     }
+}
+
+// --- LOGIC: RECORD & SEND ---
+const recordBtn = document.getElementById('recordBtn');
+recordBtn.addEventListener('click', () => {
+    if (!isRecording) startRecording();
+    else stopRecording();
 });
 
 async function startRecording() {
-    // Запрашиваем доступ к микрофону
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Ваш браузер не поддерживает запись аудио.');
-        return;
-    }
-
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
-
-        mediaRecorder.ondataavailable = event => {
-            audioChunks.push(event.data);
-        };
-
-        mediaRecorder.onstop = sendAudio;
-
+        
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = sendVoiceAnswer;
+        
         mediaRecorder.start();
-
-        // Обновляем UI
         isRecording = true;
+        
+        // UI
         recordBtn.classList.add('recording');
-        btnText.innerText = '⏹ Остановить и отправить';
-        statusText.innerText = 'Запись идет...';
-        visualizer.classList.add('active');
-
-        // Вибрация для тактильного отклика (работает на Android)
-        tg.HapticFeedback.impactOccurred('medium');
-
-    } catch (err) {
-        console.error('Ошибка доступа к микрофону:', err);
-        alert('Нужен доступ к микрофону для сдачи экзамена!');
+        document.getElementById('visualizer').classList.add('active');
+        updateStatus("Запись идет...");
+    } catch (e) {
+        alert("Нет доступа к микрофону");
     }
 }
 
 function stopRecording() {
-    if (mediaRecorder) {
-        mediaRecorder.stop();
-        isRecording = false;
-
-        // Сбрасываем UI
-        recordBtn.classList.remove('recording');
-        btnText.innerText = '⏳ Отправка...';
-        statusText.innerText = 'ИИ анализирует ответ...';
-        visualizer.classList.remove('active');
-        recordBtn.disabled = true; // Блокируем кнопку пока идет отправка
-    }
+    mediaRecorder.stop();
+    isRecording = false;
+    
+    // UI
+    recordBtn.classList.remove('recording');
+    document.getElementById('visualizer').classList.remove('active');
+    updateStatus("Отправка...");
+    toggleLoader(true);
 }
 
-async function sendAudio() {
-    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); // WebM - стандарт для веба
-
-    // Формируем данные для отправки
+async function sendVoiceAnswer() {
+    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    
     const formData = new FormData();
-    formData.append('file', audioBlob, 'voice_message.webm');
-
-    // ВАЖНО: Передаем данные пользователя из Telegram (ID, имя и т.д.)
-    // n8n сможет распарсить это и понять, кто сдал тест
+    formData.append('action', 'submit_answer');
+    formData.append('session_id', currentSessionId); // ОБЯЗАТЕЛЬНО шлем ID сессии
+    formData.append('file', audioBlob, 'answer.webm');
     formData.append('userData', JSON.stringify(tg.initDataUnsafe));
-    formData.append('queryId', tg.initData); // Нужно для валидации (если требуется безопасность)
 
     try {
-        const response = await fetch(N8N_WEBHOOK_URL, {
-            method: 'POST',
-            body: formData
-        });
+        const res = await fetch(N8N_URL, { method: 'POST', body: formData });
+        const data = await res.json();
 
-        if (response.ok) {
-            statusText.innerText = 'Ответ принят! Жди результат.';
-            btnText.innerText = '🎙 Записать новый ответ';
-            tg.HapticFeedback.notificationOccurred('success');
-
-            // Здесь можно закрыть окно автоматически, если нужно
-            // tg.close();
+        if (data.status === 'finished') {
+            finishSession(data);
         } else {
-            throw new Error('Ошибка сервера');
+            // Следующий вопрос
+            playAudio(data.audio);
+            updateStatus("Слушайте вопрос...");
         }
-    } catch (error) {
-        statusText.innerText = 'Ошибка отправки 😢';
-        tg.HapticFeedback.notificationOccurred('error');
-        console.error(error);
+    } catch (e) {
+        alert("Ошибка отправки");
     } finally {
-        recordBtn.disabled = false;
+        toggleLoader(false);
     }
-
 }
 
+// --- HELPERS ---
+function playAudio(base64Audio) {
+    const player = document.getElementById('audioPlayer');
+    player.src = `data:audio/mp3;base64,${base64Audio}`;
+    player.play();
+}
+
+function updateStatus(text) {
+    document.getElementById('msgStatus').innerText = text;
+}
+
+function finishSession(data) {
+    showScreen('result');
+    document.getElementById('finalScore').innerText = data.score;
+    document.getElementById('finalFeedback').innerText = data.feedback;
+}
