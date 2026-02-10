@@ -4,7 +4,7 @@ tg.expand(); // Разворачиваем на весь экран
 
 // --- НАСТРОЙКИ ---
 // Сюда вставь URL Production Webhook из n8n (тип POST)
-const N8N_WEBHOOK_URL = 'https://твоя-n8n-установка.com/webhook/voice-handler';
+const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook-test/test123weqwe';
 
 let mediaRecorder;
 let audioChunks = [];
@@ -108,4 +108,5 @@ async function sendAudio() {
     } finally {
         recordBtn.disabled = false;
     }
+
 }
