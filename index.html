@@ -10,38 +10,48 @@
 
     <div class="container">
         
-        <div id="screen-welcome" class="screen">
+        <div id="screen-name" class="screen">
             <div class="icon-header">👋</div>
-            <h1>English Tutor</h1>
-            <p>Практикуй английский с ИИ.<br>Нажми кнопку, чтобы начать.</p>
-            <button class="main-btn" onclick="startWelcomeFlow()">Начать тренировку</button>
+            <h2>Let's meet!</h2>
+            <p>Как к тебе обращаться?</p>
+            
+            <input type="text" id="nameInput" placeholder="Твое имя (напр. Alex)" autocomplete="off">
+            
+            <button class="main-btn" onclick="submitName()">Далее</button>
         </div>
 
         <div id="screen-levels" class="screen hidden">
-            <h3>Select your level</h3>
-            <p class="hint">Выберите сложность вопросов</p>
+            <h3>Твой уровень English?</h3>
+            <p>Это поможет подобрать вопросы.</p>
             <div class="grid-btns">
-                <button class="level-btn" onclick="startSession('A1')">
+                <button class="level-btn" onclick="selectLevel('A1')">
                     <span class="lvl-badge">A1</span> Beginner
                 </button>
-                <button class="level-btn" onclick="startSession('B1')">
+                <button class="level-btn" onclick="selectLevel('B1')">
                     <span class="lvl-badge">B1</span> Intermediate
                 </button>
-                <button class="level-btn" onclick="startSession('C1')">
+                <button class="level-btn" onclick="selectLevel('C1')">
                     <span class="lvl-badge">C1</span> Advanced
                 </button>
             </div>
         </div>
 
+        <div id="screen-prestart" class="screen hidden">
+            <div class="icon-header">🚀</div>
+            <h3>Все готово!</h3>
+            <p>Сейчас ИИ задаст первый вопрос.<br>Послушай и запиши ответ.</p>
+            <button class="main-btn" onclick="startTrainingSession()">Начать тренировку</button>
+        </div>
+
         <div id="screen-chat" class="screen hidden">
             <div class="top-bar">
-                <span id="currentLevelDisplay">Lvl</span>
+                <span id="displayUserLevel">Lvl</span>
                 <span class="live-indicator">LIVE</span>
             </div>
 
             <div class="chat-area">
                 <div class="ai-avatar pulse">🤖</div>
-                <p id="statusText">Слушайте вопрос...</p>
+                <p id="statusText">Подключение к ИИ...</p>
             </div>
 
             <audio id="audioPlayer" style="display:none"></audio>
@@ -54,28 +64,28 @@
             <button id="recordBtn" class="record-btn">
                 <div class="mic-icon">🎙</div>
             </button>
-            <p class="sub-text" id="recordHint">Нажмите, чтобы говорить</p>
+            <p class="sub-text">Нажми, чтобы ответить</p>
         </div>
 
         <div id="screen-result" class="screen hidden">
-            <div class="result-header">
-                <div class="score-circle">
-                    <span id="finalScore">0</span>
-                    <small>/10</small>
-                </div>
+            <h3>Результат сессии</h3>
+            
+            <div class="score-circle">
+                <span id="finalScore">0</span>
+                <small>/10</small>
             </div>
             
-            <h3>Feedback</h3>
             <div class="feedback-container">
+                <h4>Feedback:</h4>
                 <p id="finalFeedback">Загрузка...</p>
             </div>
 
-            <button class="main-btn" onclick="restartApp()">Попробовать еще</button>
+            <button class="main-btn" onclick="restartApp()">Начать заново</button>
         </div>
 
         <div id="loader" class="loader-overlay hidden">
             <div class="spinner"></div>
-            <p>AI думает...</p>
+            <p id="loaderText">Загрузка...</p>
         </div>
 
     </div>
