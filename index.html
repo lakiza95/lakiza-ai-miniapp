@@ -2,72 +2,80 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AI Language Tutor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI English Tutor</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
     <div class="container">
         
         <div id="screen-welcome" class="screen">
-            <div class="header-icon">👋</div>
-            <h2>English Practice</h2>
-            <p>Готовы прокачать speaking?</p>
-            <button class="main-btn" onclick="goToLevels()">Начать тренировку</button>
+            <div class="icon-header">👋</div>
+            <h1>English Tutor</h1>
+            <p>Практикуй английский с ИИ.<br>Нажми кнопку, чтобы начать.</p>
+            <button class="main-btn" onclick="startWelcomeFlow()">Начать тренировку</button>
         </div>
 
         <div id="screen-levels" class="screen hidden">
-            <h3>Выберите уровень</h3>
+            <h3>Select your level</h3>
+            <p class="hint">Выберите сложность вопросов</p>
             <div class="grid-btns">
-                <button class="level-btn" onclick="startSession('A1')">Beginner (A1)</button>
-                <button class="level-btn" onclick="startSession('B1')">Intermediate (B1)</button>
-                <button class="level-btn" onclick="startSession('C1')">Advanced (C1)</button>
+                <button class="level-btn" onclick="startSession('A1')">
+                    <span class="lvl-badge">A1</span> Beginner
+                </button>
+                <button class="level-btn" onclick="startSession('B1')">
+                    <span class="lvl-badge">B1</span> Intermediate
+                </button>
+                <button class="level-btn" onclick="startSession('C1')">
+                    <span class="lvl-badge">C1</span> Advanced
+                </button>
             </div>
-            <p class="hint">Сессия будет создана сразу после выбора</p>
         </div>
 
         <div id="screen-chat" class="screen hidden">
-            <div class="status-bar">
-                <span id="sessionLevelBadge">Lvl</span>
-                <span id="msgStatus">Слушайте вопрос...</span>
+            <div class="top-bar">
+                <span id="currentLevelDisplay">Lvl</span>
+                <span class="live-indicator">LIVE</span>
             </div>
 
-            <div class="ai-avatar pulse" id="aiAvatar">🤖</div>
+            <div class="chat-area">
+                <div class="ai-avatar pulse">🤖</div>
+                <p id="statusText">Слушайте вопрос...</p>
+            </div>
 
             <audio id="audioPlayer" style="display:none"></audio>
 
-            <div class="controls">
-                <div class="visualizer" id="visualizer">
-                    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                    <div class="bar"></div><div class="bar"></div>
-                </div>
-                
-                <button id="recordBtn" class="record-btn">
-                    <div class="inner-circle"></div>
-                </button>
-                <p id="recordHint">Нажмите, чтобы говорить</p>
+            <div class="visualizer" id="visualizer">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div><div class="bar"></div>
             </div>
+
+            <button id="recordBtn" class="record-btn">
+                <div class="mic-icon">🎙</div>
+            </button>
+            <p class="sub-text" id="recordHint">Нажмите, чтобы говорить</p>
         </div>
 
         <div id="screen-result" class="screen hidden">
-            <div class="score-circle">
-                <span id="finalScore">-</span>
-                <small>/10</small>
+            <div class="result-header">
+                <div class="score-circle">
+                    <span id="finalScore">0</span>
+                    <small>/10</small>
+                </div>
             </div>
-            <h3>Тренировка завершена!</h3>
             
-            <div class="feedback-box">
-                <h4>Feedback:</h4>
+            <h3>Feedback</h3>
+            <div class="feedback-container">
                 <p id="finalFeedback">Загрузка...</p>
             </div>
 
             <button class="main-btn" onclick="restartApp()">Попробовать еще</button>
         </div>
-        
+
         <div id="loader" class="loader-overlay hidden">
             <div class="spinner"></div>
+            <p>AI думает...</p>
         </div>
 
     </div>
