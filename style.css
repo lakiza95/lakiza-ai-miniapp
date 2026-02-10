@@ -13,7 +13,7 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
     height: 100vh;
-    overflow: hidden; /* Чтобы не скроллилось */
+    overflow: hidden;
     display: flex;
     justify-content: center;
 }
@@ -28,7 +28,6 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    position: relative;
 }
 
 .screen {
@@ -44,10 +43,23 @@ body {
 
 .hidden { display: none !important; }
 
-/* Typography */
-h1, h2, h3 { margin: 10px 0; }
-p { color: var(--hint-color); margin-bottom: 20px; }
-.hint { font-size: 14px; margin-top: -5px; }
+/* Input Field */
+input[type="text"] {
+    width: 100%;
+    padding: 16px;
+    margin: 20px 0;
+    border-radius: 12px;
+    border: 1px solid var(--secondary-bg);
+    background: var(--secondary-bg);
+    color: var(--text-color);
+    font-size: 16px;
+    box-sizing: border-box;
+    outline: none;
+    text-align: center;
+}
+input[type="text"]:focus {
+    border-color: var(--btn-color);
+}
 
 /* Buttons */
 .main-btn {
@@ -60,7 +72,7 @@ p { color: var(--hint-color); margin-bottom: 20px; }
     font-weight: 600;
     width: 100%;
     cursor: pointer;
-    transition: opacity 0.2s;
+    margin-top: 10px;
 }
 .main-btn:active { opacity: 0.8; }
 
@@ -94,11 +106,9 @@ p { color: var(--hint-color); margin-bottom: 20px; }
     font-weight: bold;
 }
 
-/* Chat Screen */
-.ai-avatar {
-    font-size: 64px;
-    margin-bottom: 20px;
-}
+/* Chat & Result Elements */
+.icon-header { font-size: 48px; margin-bottom: 20px; }
+.ai-avatar { font-size: 64px; margin-bottom: 20px; }
 .pulse { animation: pulse 2s infinite; }
 
 .record-btn {
@@ -112,96 +122,42 @@ p { color: var(--hint-color); margin-bottom: 20px; }
     justify-content: center;
     cursor: pointer;
     margin-top: 20px;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.2s;
 }
-.record-btn .mic-icon { font-size: 32px; }
-
 .record-btn.recording {
     background-color: #ff3b30;
     border-color: #ff3b30;
     transform: scale(1.1);
 }
-.record-btn.recording .mic-icon { display: none; } /* Скрываем иконку при записи */
-.record-btn.recording::after {
-    content: '';
-    width: 24px;
-    height: 24px;
-    background: white;
-    border-radius: 4px;
-}
+.record-btn.recording .mic-icon { display: none; }
 
-/* Visualizer */
-.visualizer {
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    margin-top: 10px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
+/* Visualizer & Loader */
+.visualizer { height: 30px; display: flex; justify-content: center; gap: 4px; margin-top: 10px; opacity: 0; }
 .visualizer.active { opacity: 1; }
-.bar {
-    width: 5px;
-    background-color: var(--btn-color);
-    border-radius: 2px;
-    height: 5px;
-    animation: wave 1s ease-in-out infinite;
-}
-.bar:nth-child(1) { animation-delay: 0.0s; }
-.bar:nth-child(2) { animation-delay: 0.1s; }
-.bar:nth-child(3) { animation-delay: 0.2s; }
-.bar:nth-child(4) { animation-delay: 0.3s; }
-.bar:nth-child(5) { animation-delay: 0.4s; }
+.bar { width: 5px; background: var(--btn-color); height: 5px; animation: wave 1s infinite; }
+.bar:nth-child(2) { animation-delay: 0.1s; } .bar:nth-child(3) { animation-delay: 0.2s; }
 
-/* Result Screen */
 .score-circle {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    border: 6px solid var(--btn-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-    font-weight: bold;
-    margin: 0 auto 20px;
+    width: 100px; height: 100px;
+    border-radius: 50%; border: 6px solid var(--btn-color);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: bold; margin: 0 auto 20px;
 }
 .feedback-container {
-    background: var(--secondary-bg);
-    padding: 15px;
-    border-radius: 12px;
-    text-align: left;
-    max-height: 30vh;
-    overflow-y: auto;
-    font-size: 14px;
-    line-height: 1.5;
+    background: var(--secondary-bg); padding: 15px; border-radius: 12px;
+    text-align: left; max-height: 30vh; overflow-y: auto; font-size: 14px;
 }
-
-/* Loader */
 .loader-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 1000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     color: white;
 }
 .spinner {
-    width: 40px; height: 40px;
-    border: 4px solid #fff;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 10px;
+    width: 40px; height: 40px; border: 4px solid #fff; border-top-color: transparent;
+    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px;
 }
 
-/* Animations */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 @keyframes wave { 0%, 100% { height: 5px; } 50% { height: 25px; } }
