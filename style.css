@@ -4,7 +4,6 @@
     --btn-color: var(--tg-theme-button-color, #3390ec);
     --btn-text: var(--tg-theme-button-text-color, #fff);
     --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f2f5);
-    --hint-color: var(--tg-theme-hint-color, #999);
 }
 
 body {
@@ -43,25 +42,27 @@ body {
 
 .hidden { display: none !important; }
 
-/* Input Field */
-input[type="text"] {
-    width: 100%;
-    padding: 16px;
-    margin: 20px 0;
-    border-radius: 12px;
-    border: 1px solid var(--secondary-bg);
+/* Audio Player Styling */
+.audio-wrapper {
     background: var(--secondary-bg);
-    color: var(--text-color);
-    font-size: 16px;
+    padding: 15px;
+    border-radius: 12px;
+    width: 100%;
+    margin-bottom: 30px;
     box-sizing: border-box;
-    outline: none;
-    text-align: center;
 }
-input[type="text"]:focus {
-    border-color: var(--btn-color);
+.audio-wrapper .label {
+    text-align: left;
+    margin: 0 0 10px 0;
+    font-weight: bold;
+    font-size: 14px;
+}
+audio {
+    width: 100%;
+    height: 40px;
 }
 
-/* Buttons */
+/* Buttons & Inputs */
 .main-btn {
     background-color: var(--btn-color);
     color: var(--btn-text);
@@ -72,44 +73,8 @@ input[type="text"]:focus {
     font-weight: 600;
     width: 100%;
     cursor: pointer;
-    margin-top: 10px;
-}
-.main-btn:active { opacity: 0.8; }
-
-.grid-btns {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
     margin-top: 20px;
 }
-
-.level-btn {
-    background-color: var(--secondary-bg);
-    color: var(--text-color);
-    border: none;
-    padding: 16px;
-    border-radius: 12px;
-    font-size: 16px;
-    text-align: left;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-.lvl-badge {
-    background: var(--btn-color);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 12px;
-    margin-right: 12px;
-    font-weight: bold;
-}
-
-/* Chat & Result Elements */
-.icon-header { font-size: 48px; margin-bottom: 20px; }
-.ai-avatar { font-size: 64px; margin-bottom: 20px; }
-.pulse { animation: pulse 2s infinite; }
 
 .record-btn {
     width: 80px;
@@ -121,7 +86,7 @@ input[type="text"]:focus {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    margin-top: 20px;
+    margin-top: 10px;
     transition: all 0.2s;
 }
 .record-btn.recording {
@@ -131,12 +96,13 @@ input[type="text"]:focus {
 }
 .record-btn.recording .mic-icon { display: none; }
 
-/* Visualizer & Loader */
-.visualizer { height: 30px; display: flex; justify-content: center; gap: 4px; margin-top: 10px; opacity: 0; }
+/* Visualizer */
+.visualizer { height: 30px; display: flex; justify-content: center; gap: 4px; margin-bottom: 10px; opacity: 0; }
 .visualizer.active { opacity: 1; }
 .bar { width: 5px; background: var(--btn-color); height: 5px; animation: wave 1s infinite; }
 .bar:nth-child(2) { animation-delay: 0.1s; } .bar:nth-child(3) { animation-delay: 0.2s; }
 
+/* Result Screen */
 .score-circle {
     width: 100px; height: 100px;
     border-radius: 50%; border: 6px solid var(--btn-color);
@@ -147,6 +113,8 @@ input[type="text"]:focus {
     background: var(--secondary-bg); padding: 15px; border-radius: 12px;
     text-align: left; max-height: 30vh; overflow-y: auto; font-size: 14px;
 }
+
+/* Loader */
 .loader-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.8); z-index: 1000;
@@ -159,6 +127,5 @@ input[type="text"]:focus {
 }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 @keyframes wave { 0%, 100% { height: 5px; } 50% { height: 25px; } }
 @keyframes spin { to { transform: rotate(360deg); } }
