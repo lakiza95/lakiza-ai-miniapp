@@ -1,5 +1,5 @@
 // --- CONFIG ---
-const N8N_WEBHOOK_URL = 'https://YOUR-DOMAIN.com/webhook/voice-tutor';
+const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';
 
 // --- INIT ---
 const tg = window.Telegram.WebApp;
@@ -199,3 +199,4 @@ function setBotAudio(base64) {
 function updateQuestionCounter() {
     questionCounterDisplay.innerText = `Вопрос #${questionNumber}`;
 }
+
