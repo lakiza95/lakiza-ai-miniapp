@@ -2,7 +2,7 @@
 // 1. КОНФИГУРАЦИЯ
 // ==========================================
 // Вставь сюда свой Production URL из n8n
-const N8N_WEBHOOK_URL = 'https://YOUR-DOMAIN.com/webhook/voice-tutor';
+const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';
 
 // ==========================================
 // 2. ИНИЦИАЛИЗАЦИЯ И СОСТОЯНИЕ
@@ -253,3 +253,4 @@ function handleServerResponse(data) {
         tg.HapticFeedback.impactOccurred('light');
     }
 }
+
