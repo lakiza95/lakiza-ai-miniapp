@@ -15,6 +15,20 @@
             <h1>Тренировка</h1>
             <p>Нажми кнопку, чтобы создать сессию и начать общение.</p>
             <button class="main-btn" onclick="startSession()">Начать тренировку</button>
+            <button class="secondary-btn" onclick="loadHistory()">История тренировок</button>
+        </div>
+
+        <div id="screen-history" class="screen hidden">
+            <div class="top-bar">
+                <span>История тренировок</span>
+            </div>
+            
+            <div class="history-list" id="historyList">
+                </div>
+
+            <div class="footer-area">
+                <button class="secondary-btn" onclick="showScreen('welcome')">Назад</button>
+            </div>
         </div>
 
         <div id="screen-chat" class="screen hidden">
@@ -48,14 +62,21 @@
 
         <div id="screen-result" class="screen hidden">
             <h3>Тренировка завершена</h3>
+            
             <div class="score-circle">
-                <span id="finalScore">-</span><small>/10</small>
+                <span class="score-value" id="finalScore">-</span>
+                <span class="score-max">/10</span>
             </div>
+            
             <div class="feedback-container">
                 <h4>Комментарий:</h4>
                 <p id="finalFeedback">Загрузка...</p>
             </div>
-            <button class="main-btn" onclick="location.reload()">Новая сессия</button>
+            
+            <div class="action-buttons">
+                <button class="main-btn" onclick="startSession()">Новая сессия</button>
+                <button class="secondary-btn" onclick="location.reload()">На главный экран</button>
+            </div>
         </div>
 
         <div id="loader" class="loader-overlay hidden">
