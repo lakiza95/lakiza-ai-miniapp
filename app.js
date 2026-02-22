@@ -1,5 +1,4 @@
 
-// ==========================================
 // 1. КОНФИГУРАЦИЯ
 // ==========================================
 const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe'; // <-- ВАШ URL
@@ -59,7 +58,6 @@ function formatTime(seconds) {
 // 3. ЛОГИКА ИСТОРИИ ЧАТА (BUBBLES)
 // ==========================================
 
-// Добавление нового сообщения в чат
 function addMessageBubble(role, audioSrc) {
     const msgId = 'msg_' + Date.now();
     const isUser = role === 'user';
@@ -67,7 +65,6 @@ function addMessageBubble(role, audioSrc) {
     // Генерируем 35 случайных столбиков для реалистичной волны
     let barsHTML = '';
     for (let i = 0; i < 35; i++) {
-        // Делаем края чуть ниже, а центр выше
         const height = Math.floor(Math.random() * 40) + 20 + (Math.sin(i/5) * 20); 
         barsHTML += `<div class="wave-bar" style="height: ${Math.max(15, height)}%"></div>`;
     }
@@ -108,41 +105,37 @@ function addMessageBubble(role, audioSrc) {
 // ==========================================
 
 function togglePlay(msgId, audioSrc) {
-    // Если кликнули на ТОТ ЖЕ самый трек
     if (currentPlayingId === msgId) {
         if (masterPlayer.paused) masterPlayer.play();
         else masterPlayer.pause();
         return;
     }
 
-    // Если играл ДРУГОЙ трек, сбрасываем его интерфейс
     if (currentPlayingId) {
         resetBubbleUI(currentPlayingId);
     }
 
-    // Запускаем НОВЫЙ трек
     currentPlayingId = msgId;
     
-    // Если это base64 от n8n, добавляем префикс
     if (!audioSrc.startsWith('blob:') && !audioSrc.startsWith('data:')) {
         masterPlayer.src = `data:audio/mp3;base64,${audioSrc}`;
     } else {
-        masterPlayer.src = audioSrc; // Для локальных Blob URL (сообщение юзера)
+        masterPlayer.src = audioSrc; 
     }
 
     masterPlayer.play().catch(e => console.log("Play error:", e));
 }
 
-// Сброс иконок и прогресса у конкретного пузыря
+// Сброс иконок и маски у конкретного пузыря
 function resetBubbleUI(msgId) {
     const bubble = document.getElementById(msgId);
     if (!bubble) return;
     bubble.querySelector('.icon-play').classList.remove('hidden');
     bubble.querySelector('.icon-pause').classList.add('hidden');
-    document.getElementById(`progress_${msgId}`).style.width = '0%';
+    // Скрываем 100% ширины синего слоя (маска полностью закрывает слой справа налево)
+    document.getElementById(`progress_${msgId}`).style.clipPath = 'inset(0 100% 0 0)';
 }
 
-// Слушатели мастера плеера для обновления активного UI
 masterPlayer.addEventListener('play', () => {
     if(!currentPlayingId) return;
     const bubble = document.getElementById(currentPlayingId);
@@ -163,6 +156,7 @@ masterPlayer.addEventListener('ended', () => {
     currentPlayingId = null;
 });
 
+// Плавное открытие синего слоя через clip-path
 masterPlayer.addEventListener('timeupdate', () => {
     if(!currentPlayingId) return;
     const current = masterPlayer.currentTime;
@@ -170,7 +164,10 @@ masterPlayer.addEventListener('timeupdate', () => {
     
     if (duration && isFinite(duration)) {
         const percent = (current / duration) * 100;
-        document.getElementById(`progress_${currentPlayingId}`).style.width = `${percent}%`;
+        // Вычисляем, сколько процентов нужно скрыть справа (100 - текущий прогресс)
+        const clipRight = 100 - percent; 
+        document.getElementById(`progress_${currentPlayingId}`).style.clipPath = `inset(0 ${clipRight}% 0 0)`;
+        
         document.getElementById(`time_${currentPlayingId}`).innerText = formatTime(current);
     }
 });
@@ -199,7 +196,7 @@ async function startSession() {
     toggleLoader(true, "Создаем сессию...");
     currentSessionId = generateUUID();
     questionNumber = 1;
-    chatHistory.innerHTML = ''; // Очищаем историю
+    chatHistory.innerHTML = ''; 
 
     try {
         const data = await sendToN8N({
@@ -213,7 +210,6 @@ async function startSession() {
         toggleLoader(false);
 
         if (data.audio) {
-            // Добавляем первое сообщение ИИ в чат
             addMessageBubble('ai', data.audio);
         }
     } catch (e) {
@@ -229,7 +225,7 @@ recordBtn.addEventListener('click', () => {
 });
 
 async function startRecording() {
-    masterPlayer.pause(); // Глушим ИИ
+    masterPlayer.pause();
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -247,7 +243,6 @@ async function startRecording() {
         mediaRecorder.start();
         isRecording = true;
         
-        // Меняем вид кнопки (красная -> пульсирует, показываем стоп)
         recordBtn.classList.add('recording');
         iconMic.classList.add('hidden');
         iconStop.classList.remove('hidden');
@@ -265,7 +260,6 @@ function stopRecording() {
         mediaRecorder.stop();
         isRecording = false;
         
-        // Возвращаем кнопку в исходный вид
         recordBtn.classList.remove('recording');
         iconMic.classList.remove('hidden');
         iconStop.classList.add('hidden');
@@ -280,11 +274,9 @@ async function sendVoiceAnswer() {
     const fileExt = mimeType.includes('mp4') ? 'mp4' : 'webm';
     const audioBlob = new Blob(audioChunks, { type: mimeType });
 
-    // Сразу добавляем сообщение пользователя в интерфейс чата!
     const localAudioUrl = URL.createObjectURL(audioBlob);
     addMessageBubble('user', localAudioUrl);
 
-    // Отправляем на сервер
     const formData = new FormData();
     formData.append('action', 'submit_answer');
     formData.append('session_id', currentSessionId);
@@ -303,7 +295,6 @@ async function sendVoiceAnswer() {
             tg.HapticFeedback.notificationOccurred('success');
         } else if (data.audio) {
             questionNumber++;
-            // Добавляем ответ ИИ в чат
             addMessageBubble('ai', data.audio);
             statusText.innerText = "Нажми, чтобы ответить";
         }
@@ -313,3 +304,4 @@ async function sendVoiceAnswer() {
         toggleLoader(false);
     }
 }
+
