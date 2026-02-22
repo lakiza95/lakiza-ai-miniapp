@@ -18,6 +18,34 @@
             <div class="action-buttons">
                 <button class="main-btn" onclick="startSession()">Начать тренировку</button>
                 <button class="secondary-btn" onclick="loadHistory()">История тренировок</button>
+                <button class="secondary-btn" onclick="loadProfile()">Профиль</button>
+            </div>
+        </div>
+
+        <div id="screen-profile" class="screen hidden">
+            <div class="top-bar">
+                <span>Ваш профиль</span>
+            </div>
+            
+            <div class="form-container">
+                <div class="form-group">
+                    <label for="profileName">Имя</label>
+                    <input type="text" id="profileName" placeholder="Введите ваше имя" autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profileLevel">Уровень языка</label>
+                    <select id="profileLevel">
+                        <option value="A1-A2">A1-A2 (Beginner / Elementary)</option>
+                        <option value="B1-B2">B1-B2 (Intermediate / Upper)</option>
+                        <option value="C1-C2">C1-C2 (Advanced / Proficiency)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="footer-area">
+                <button class="main-btn" onclick="saveProfile()">Сохранить</button>
+                <button class="secondary-btn" onclick="showScreen('welcome')">Назад</button>
             </div>
         </div>
 
