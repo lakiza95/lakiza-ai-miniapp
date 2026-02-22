@@ -20,7 +20,7 @@ const screens = {
 };
 
 const chatHistory = document.getElementById('chatHistory');
-const historyList = document.getElementById('historyList'); // Контейнер истории
+const historyList = document.getElementById('historyList');
 const masterPlayer = document.getElementById('masterPlayer');
 const recordBtn = document.getElementById('recordBtn');
 const iconMic = recordBtn.querySelector('.icon-mic');
@@ -165,7 +165,7 @@ masterPlayer.addEventListener('loadedmetadata', () => {
 });
 
 // ==========================================
-// 5. ИСТОРИЯ ТРЕНИРОВОК (ЗАГРУЗКА)
+// 5. ИСТОРИЯ ТРЕНИРОВОК
 // ==========================================
 
 async function loadHistory() {
@@ -177,12 +177,10 @@ async function loadHistory() {
             userData: tg.initDataUnsafe
         });
 
-        // Очищаем старый список
         historyList.innerHTML = '';
 
         if (data.history && data.history.length > 0) {
             data.history.forEach(item => {
-                // Ожидаем, что n8n вернет массив объектов: { date: "12 Окт 15:30", score: "8.5" }
                 const div = document.createElement('div');
                 div.className = 'history-item';
                 div.innerHTML = `
@@ -192,7 +190,7 @@ async function loadHistory() {
                 historyList.appendChild(div);
             });
         } else {
-            historyList.innerHTML = '<p style="text-align:center; color:gray;">У вас пока нет тренировок</p>';
+            historyList.innerHTML = '<p style="text-align:center; color:gray; margin-top:20px;">У вас пока нет тренировок</p>';
         }
 
         showScreen('history');
