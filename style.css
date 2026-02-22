@@ -102,9 +102,9 @@ body {
 }
 
 .wave-active-layer {
-    width: 0%; /* Заполняется через JS */
-    overflow: hidden; /* Обрезает цветные столбики ровно по ширине */
-    transition: width 0.1s linear;
+    width: 100%; /* Теперь ширина всегда 100%, чтобы столбики идеально совпадали */
+    clip-path: inset(0 100% 0 0); /* Обрезаем 100% справа (то есть скрываем всё) */
+    transition: clip-path 0.1s linear;
     z-index: 2;
 }
 
@@ -170,3 +170,4 @@ body {
 
 @keyframes wave { 0%, 100% { height: 4px; } 50% { height: 20px; } }
 @keyframes spin { to { transform: rotate(360deg); } }
+
