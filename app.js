@@ -1,5 +1,4 @@
-// 1. КОНФИГУРАЦИЯ
-// ==========================================
+
 const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';
 
 // ==========================================
@@ -30,9 +29,9 @@ const visualizer = document.getElementById('visualizer');
 // Элементы кастомного плеера
 const botPlayer = document.getElementById('botPlayer');
 const playPauseBtn = document.getElementById('playPauseBtn');
-const audioProgress = document.getElementById('audioProgress');
-const currentTimeDisplay = document.getElementById('currentTime');
+const waveformProgress = document.getElementById('waveformProgress');
 const totalTimeDisplay = document.getElementById('totalTime');
+const playerContainer = document.querySelector('.voice-message-player');
 
 // ==========================================
 // 3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -65,7 +64,7 @@ function updateQuestionCounter() {
 }
 
 // ==========================================
-// 4. ЛОГИКА КАСТОМНОГО ПЛЕЕРА
+// 4. ЛОГИКА КАСТОМНОГО ПЛЕЕРА (WAVEFORM)
 // ==========================================
 
 function formatTime(seconds) {
@@ -76,26 +75,36 @@ function formatTime(seconds) {
 }
 
 playPauseBtn.addEventListener('click', () => {
-    if (botPlayer.paused) botPlayer.play();
-    else botPlayer.pause();
+    if (botPlayer.paused) {
+        botPlayer.play();
+    } else {
+        botPlayer.pause();
+    }
 });
 
-botPlayer.addEventListener('play', () => playPauseBtn.innerText = '⏸');
-botPlayer.addEventListener('pause', () => playPauseBtn.innerText = '▶️');
+botPlayer.addEventListener('play', () => {
+    playPauseBtn.innerText = '⏸';
+    playerContainer.classList.add('playing');
+});
+
+botPlayer.addEventListener('pause', () => {
+    playPauseBtn.innerText = '▶️';
+    playerContainer.classList.remove('playing');
+});
+
 botPlayer.addEventListener('ended', () => {
     playPauseBtn.innerText = '▶️';
-    audioProgress.value = 0;
-    currentTimeDisplay.innerText = '0:00';
+    waveformProgress.style.width = '0%';
+    playerContainer.classList.remove('playing');
 });
 
 botPlayer.addEventListener('timeupdate', () => {
     const current = botPlayer.currentTime;
     const duration = botPlayer.duration;
     
-    if (duration && isFinite(duration)) {
-        audioProgress.value = (current / duration) * 100;
-        currentTimeDisplay.innerText = formatTime(current);
-        totalTimeDisplay.innerText = formatTime(duration);
+    if (duration && isFinite(duration) && duration > 0) {
+        const progressPercent = (current / duration) * 100;
+        waveformProgress.style.width = `${progressPercent}%`;
     }
 });
 
@@ -105,25 +114,18 @@ botPlayer.addEventListener('loadedmetadata', () => {
     }
 });
 
-audioProgress.addEventListener('input', (e) => {
-    const duration = botPlayer.duration;
-    if (duration && isFinite(duration)) {
-        botPlayer.currentTime = (e.target.value / 100) * duration;
-    }
-});
-
 function setBotAudio(base64) {
     botPlayer.src = `data:audio/mp3;base64,${base64}`;
     
-    // Сбрасываем UI плеера
-    audioProgress.value = 0;
-    currentTimeDisplay.innerText = '0:00';
+    // Сбрасываем интерфейс
+    waveformProgress.style.width = '0%';
     totalTimeDisplay.innerText = '0:00';
     playPauseBtn.innerText = '▶️';
+    playerContainer.classList.remove('playing');
 
-    // Пытаемся запустить
+    // Пытаемся запустить (если браузер разрешит)
     botPlayer.play().catch(e => {
-        console.log("Автоплей заблокирован, пользователь нажмет сам");
+        console.log("Автоплей заблокирован, пользователь должен нажать Play");
     });
 }
 
@@ -141,7 +143,7 @@ async function sendToN8N(payload) {
 }
 
 async function startSession() {
-    toggleLoader(true, "Создаем сессию...");
+    toggleLoader(true, "Создаем тренировку...");
     
     currentSessionId = generateUUID();
     questionNumber = 1;
@@ -219,7 +221,7 @@ function stopRecording() {
 
 async function sendVoiceAnswer() {
     if (!currentSessionId) {
-        alert("Ошибка: Нет сессии!");
+        alert("Ошибка: Нет сессии! Перезагрузите приложение.");
         return;
     }
 
