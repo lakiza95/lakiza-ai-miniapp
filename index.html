@@ -13,72 +13,48 @@
         <div id="screen-welcome" class="screen">
             <div class="icon-header">🚀</div>
             <h1>Тренировка</h1>
-            <p>Нажми кнопку, чтобы создать сессию и получить первый вопрос.</p>
+            <p>Нажми кнопку, чтобы создать сессию и начать общение.</p>
             <button class="main-btn" onclick="startSession()">Начать тренировку</button>
         </div>
 
         <div id="screen-chat" class="screen hidden">
             <div class="top-bar">
-                <span id="questionCounter">Вопрос #1</span>
-                <span class="live-indicator">REC</span>
+                <span id="questionCounter">Подключение...</span>
             </div>
 
-            <div class="chat-area">
-                <div class="audio-wrapper">
-                    <p class="label">Вопрос от AI:</p>
-                    
-                    <div class="voice-message-player">
-                        <button id="playPauseBtn" class="play-pause-btn">▶️</button>
-                        
-                        <div class="waveform-container" id="waveformContainer">
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            <div class="waveform-bar"></div><div class="waveform-bar"></div>
-                            
-                            <div class="waveform-progress" id="waveformProgress"></div>
-                        </div>
-                        
-                        <div class="time-display" id="totalTime">0:00</div>
-                    </div>
-
-                    <audio id="botPlayer" style="display:none"></audio>
+            <div class="chat-history" id="chatHistory">
                 </div>
-            </div>
 
-            <div class="visualizer" id="visualizer">
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                <div class="bar"></div><div class="bar"></div>
-            </div>
+            <div class="record-area">
+                <p class="sub-text" id="statusText">Нажми, чтобы ответить</p>
+                
+                <div class="visualizer" id="visualizer">
+                    <div class="v-bar"></div><div class="v-bar"></div><div class="v-bar"></div>
+                    <div class="v-bar"></div><div class="v-bar"></div>
+                </div>
 
-            <button id="recordBtn" class="record-btn">
-                <div class="mic-icon">🎙</div>
-            </button>
-            <p class="sub-text" id="statusText">Нажми, чтобы ответить</p>
+                <button id="recordBtn" class="record-btn">
+                    <svg class="icon-mic" viewBox="0 0 24 24">
+                        <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                    </svg>
+                    <svg class="icon-stop hidden" viewBox="0 0 24 24">
+                        <path d="M6 6h12v12H6z"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <audio id="masterPlayer" style="display:none"></audio>
         </div>
 
         <div id="screen-result" class="screen hidden">
             <h3>Тренировка завершена</h3>
-            
             <div class="score-circle">
-                <span id="finalScore">-</span>
-                <small>/10</small>
+                <span id="finalScore">-</span><small>/10</small>
             </div>
-            
             <div class="feedback-container">
                 <h4>Комментарий:</h4>
                 <p id="finalFeedback">Загрузка...</p>
             </div>
-
             <button class="main-btn" onclick="location.reload()">Новая сессия</button>
         </div>
 
