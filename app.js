@@ -1,7 +1,7 @@
 
 // 1. КОНФИГУРАЦИЯ
 // ==========================================
-const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe'; // <-- ВАШ URL
+const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';// <-- ВАШ URL
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -12,9 +12,15 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-// Элементы
-const screens = { welcome: document.getElementById('screen-welcome'), chat: document.getElementById('screen-chat'), result: document.getElementById('screen-result') };
+const screens = { 
+    welcome: document.getElementById('screen-welcome'), 
+    chat: document.getElementById('screen-chat'), 
+    result: document.getElementById('screen-result'),
+    history: document.getElementById('screen-history')
+};
+
 const chatHistory = document.getElementById('chatHistory');
+const historyList = document.getElementById('historyList'); // Контейнер истории
 const masterPlayer = document.getElementById('masterPlayer');
 const recordBtn = document.getElementById('recordBtn');
 const iconMic = recordBtn.querySelector('.icon-mic');
@@ -22,7 +28,6 @@ const iconStop = recordBtn.querySelector('.icon-stop');
 const visualizer = document.getElementById('visualizer');
 const statusText = document.getElementById('statusText');
 
-// Состояние аудиоплеера
 let currentPlayingId = null; 
 
 // ==========================================
@@ -55,14 +60,13 @@ function formatTime(seconds) {
 }
 
 // ==========================================
-// 3. ЛОГИКА ИСТОРИИ ЧАТА (BUBBLES)
+// 3. ИСТОРИЯ ЧАТА (BUBBLES)
 // ==========================================
 
 function addMessageBubble(role, audioSrc) {
     const msgId = 'msg_' + Date.now();
     const isUser = role === 'user';
     
-    // Генерируем 35 случайных столбиков для реалистичной волны
     let barsHTML = '';
     for (let i = 0; i < 35; i++) {
         const height = Math.floor(Math.random() * 40) + 20 + (Math.sin(i/5) * 20); 
@@ -78,26 +82,17 @@ function addMessageBubble(role, audioSrc) {
             <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             <svg class="icon-pause hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         </button>
-        
         <div class="wave-container">
             <div class="wave-layer">${barsHTML}</div>
             <div class="wave-layer wave-active-layer" id="progress_${msgId}">${barsHTML}</div>
         </div>
-        
         <div class="time-label" id="time_${msgId}">0:00</div>
     `;
 
     chatHistory.appendChild(bubble);
-    
-    // Скролл вниз к новому сообщению
-    setTimeout(() => {
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    }, 50);
+    setTimeout(() => chatHistory.scrollTop = chatHistory.scrollHeight, 50);
 
-    // Если это ИИ, запускаем автовоспроизведение
-    if (!isUser) {
-        togglePlay(msgId, audioSrc);
-    }
+    if (!isUser) togglePlay(msgId, audioSrc);
 }
 
 // ==========================================
@@ -110,10 +105,7 @@ function togglePlay(msgId, audioSrc) {
         else masterPlayer.pause();
         return;
     }
-
-    if (currentPlayingId) {
-        resetBubbleUI(currentPlayingId);
-    }
+    if (currentPlayingId) resetBubbleUI(currentPlayingId);
 
     currentPlayingId = msgId;
     
@@ -122,17 +114,14 @@ function togglePlay(msgId, audioSrc) {
     } else {
         masterPlayer.src = audioSrc; 
     }
-
     masterPlayer.play().catch(e => console.log("Play error:", e));
 }
 
-// Сброс иконок и маски у конкретного пузыря
 function resetBubbleUI(msgId) {
     const bubble = document.getElementById(msgId);
     if (!bubble) return;
     bubble.querySelector('.icon-play').classList.remove('hidden');
     bubble.querySelector('.icon-pause').classList.add('hidden');
-    // Скрываем 100% ширины синего слоя (маска полностью закрывает слой справа налево)
     document.getElementById(`progress_${msgId}`).style.clipPath = 'inset(0 100% 0 0)';
 }
 
@@ -156,18 +145,14 @@ masterPlayer.addEventListener('ended', () => {
     currentPlayingId = null;
 });
 
-// Плавное открытие синего слоя через clip-path
 masterPlayer.addEventListener('timeupdate', () => {
     if(!currentPlayingId) return;
     const current = masterPlayer.currentTime;
     const duration = masterPlayer.duration;
-    
     if (duration && isFinite(duration)) {
         const percent = (current / duration) * 100;
-        // Вычисляем, сколько процентов нужно скрыть справа (100 - текущий прогресс)
         const clipRight = 100 - percent; 
         document.getElementById(`progress_${currentPlayingId}`).style.clipPath = `inset(0 ${clipRight}% 0 0)`;
-        
         document.getElementById(`time_${currentPlayingId}`).innerText = formatTime(current);
     }
 });
@@ -180,7 +165,47 @@ masterPlayer.addEventListener('loadedmetadata', () => {
 });
 
 // ==========================================
-// 5. ЛОГИКА СЕССИИ (START & SEND)
+// 5. ИСТОРИЯ ТРЕНИРОВОК (ЗАГРУЗКА)
+// ==========================================
+
+async function loadHistory() {
+    toggleLoader(true, "Загрузка истории...");
+    
+    try {
+        const data = await sendToN8N({
+            action: 'get_history',
+            userData: tg.initDataUnsafe
+        });
+
+        // Очищаем старый список
+        historyList.innerHTML = '';
+
+        if (data.history && data.history.length > 0) {
+            data.history.forEach(item => {
+                // Ожидаем, что n8n вернет массив объектов: { date: "12 Окт 15:30", score: "8.5" }
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <span class="history-date">${item.date}</span>
+                    <span class="history-score">${item.score}/10</span>
+                `;
+                historyList.appendChild(div);
+            });
+        } else {
+            historyList.innerHTML = '<p style="text-align:center; color:gray;">У вас пока нет тренировок</p>';
+        }
+
+        showScreen('history');
+
+    } catch (e) {
+        alert("Не удалось загрузить историю");
+    } finally {
+        toggleLoader(false);
+    }
+}
+
+// ==========================================
+// 6. ЛОГИКА СЕССИИ (START & SEND)
 // ==========================================
 
 async function sendToN8N(payload) {
@@ -218,7 +243,6 @@ async function startSession() {
     }
 }
 
-// Запись звука Пользователя
 recordBtn.addEventListener('click', () => {
     if (!isRecording) startRecording();
     else stopRecording();
@@ -226,7 +250,6 @@ recordBtn.addEventListener('click', () => {
 
 async function startRecording() {
     masterPlayer.pause();
-
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         let options = { mimeType: 'audio/webm' };
@@ -236,10 +259,8 @@ async function startRecording() {
 
         mediaRecorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream);
         audioChunks = [];
-        
         mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
         mediaRecorder.onstop = sendVoiceAnswer;
-        
         mediaRecorder.start();
         isRecording = true;
         
@@ -304,4 +325,3 @@ async function sendVoiceAnswer() {
         toggleLoader(false);
     }
 }
-
