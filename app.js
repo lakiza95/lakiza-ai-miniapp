@@ -1,7 +1,8 @@
 
+// ==========================================
 // 1. КОНФИГУРАЦИЯ
 // ==========================================
-const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';// <-- ВАШ URL
+const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';// <-- ВАШ URL// <-- ВАШ URL
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -16,7 +17,8 @@ const screens = {
     welcome: document.getElementById('screen-welcome'), 
     chat: document.getElementById('screen-chat'), 
     result: document.getElementById('screen-result'),
-    history: document.getElementById('screen-history')
+    history: document.getElementById('screen-history'),
+    profile: document.getElementById('screen-profile') // <-- Добавлен экран профиля
 };
 
 const chatHistory = document.getElementById('chatHistory');
@@ -165,28 +167,21 @@ masterPlayer.addEventListener('loadedmetadata', () => {
 });
 
 // ==========================================
-// 5. ИСТОРИЯ ТРЕНИРОВОК
+// 5. ИСТОРИЯ И ПРОФИЛЬ
 // ==========================================
 
 async function loadHistory() {
     toggleLoader(true, "Загрузка истории...");
     
     try {
-        const data = await sendToN8N({
-            action: 'get_history',
-            userData: tg.initDataUnsafe
-        });
-
+        const data = await sendToN8N({ action: 'get_history', userData: tg.initDataUnsafe });
         historyList.innerHTML = '';
 
         if (data.history && data.history.length > 0) {
             data.history.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'history-item';
-                div.innerHTML = `
-                    <span class="history-date">${item.date}</span>
-                    <span class="history-score">${item.score}/10</span>
-                `;
+                div.innerHTML = `<span class="history-date">${item.date}</span><span class="history-score">${item.score}/10</span>`;
                 historyList.appendChild(div);
             });
         } else {
@@ -194,13 +189,60 @@ async function loadHistory() {
         }
 
         showScreen('history');
-
     } catch (e) {
         alert("Не удалось загрузить историю");
     } finally {
         toggleLoader(false);
     }
 }
+
+// Загрузка профиля (опционально, чтобы форма предзаполнялась)
+async function loadProfile() {
+    toggleLoader(true, "Загрузка профиля...");
+    try {
+        // Пытаемся получить профиль, если он уже есть
+        const data = await sendToN8N({ action: 'get_profile', userData: tg.initDataUnsafe });
+        if (data.name) document.getElementById('profileName').value = data.name;
+        if (data.level) document.getElementById('profileLevel').value = data.level;
+    } catch (e) {
+        // Если база пустая или ошибка сети — просто открываем пустую форму
+        console.log("Профиль не найден или ошибка сети");
+    } finally {
+        toggleLoader(false);
+        showScreen('profile');
+    }
+}
+
+// Сохранение профиля
+async function saveProfile() {
+    const name = document.getElementById('profileName').value.trim();
+    const level = document.getElementById('profileLevel').value;
+    
+    if (!name) {
+        tg.HapticFeedback.notificationOccurred('error');
+        alert("Пожалуйста, введите ваше имя");
+        return;
+    }
+
+    toggleLoader(true, "Сохранение...");
+    
+    try {
+        await sendToN8N({
+            action: 'save_profile',
+            name: name,
+            level: level,
+            userData: tg.initDataUnsafe
+        });
+        
+        tg.HapticFeedback.notificationOccurred('success');
+        showScreen('welcome');
+    } catch (e) {
+        alert("Ошибка сохранения: " + e.message);
+    } finally {
+        toggleLoader(false);
+    }
+}
+
 
 // ==========================================
 // 6. ЛОГИКА СЕССИИ (START & SEND)
