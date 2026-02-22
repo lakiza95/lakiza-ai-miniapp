@@ -5,6 +5,8 @@
     --btn-text: var(--tg-theme-button-text-color, #ffffff);
     --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f2f5);
     --hint-color: var(--tg-theme-hint-color, #999999);
+    --wave-blue: #5078f2; /* Основной синий для плеера */
+    --wave-gray: #e0e0e0; /* Фоновый серый для плеера */
 }
 
 body {
@@ -44,11 +46,14 @@ body {
 .hidden { display: none !important; }
 .icon-header { font-size: 48px; margin-bottom: 20px; }
 
-/* Custom Audio Player */
+/* ========================================= */
+/* CUSTOM VOICE MESSAGE PLAYER               */
+/* ========================================= */
+
 .audio-wrapper {
     background: var(--secondary-bg);
     padding: 15px;
-    border-radius: 12px;
+    border-radius: 16px;
     width: 100%;
     margin-bottom: 30px;
     box-sizing: border-box;
@@ -56,79 +61,103 @@ body {
 
 .audio-wrapper .label {
     text-align: left;
-    margin: 0 0 10px 0;
-    font-weight: bold;
+    margin: 0 0 12px 0;
+    font-weight: 600;
     font-size: 14px;
+    color: var(--hint-color);
 }
 
-.custom-player {
+.voice-message-player {
     display: flex;
     align-items: center;
     background: var(--bg-color);
-    padding: 10px 15px;
-    border-radius: 12px;
-    gap: 15px;
+    padding: 8px 12px;
+    border-radius: 20px;
+    gap: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 .play-pause-btn {
-    background: var(--btn-color);
+    background: var(--wave-blue);
     color: white;
     border: none;
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     flex-shrink: 0;
-    transition: transform 0.1s;
+    transition: transform 0.1s, background-color 0.2s;
 }
-.play-pause-btn:active { transform: scale(0.9); }
 
-.progress-container {
+.play-pause-btn:active {
+    transform: scale(0.92);
+    background-color: #4060d2;
+}
+
+.waveform-container {
     flex-grow: 1;
+    height: 24px;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Статичные линии волны */
+.waveform-bar {
+    width: 3px;
+    background-color: var(--wave-gray);
+    border-radius: 3px;
+    height: 60%;
+    transition: height 0.2s ease;
+}
+
+/* Разные высоты для реализма */
+.waveform-bar:nth-child(3n+1) { height: 40%; }
+.waveform-bar:nth-child(3n+2) { height: 85%; }
+.waveform-bar:nth-child(4n)   { height: 30%; }
+.waveform-bar:nth-child(5n)   { height: 100%; }
+
+/* Прогресс-заливка поверх */
+.waveform-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%; /* Меняется через JS */
+    background-color: rgba(80, 120, 242, 0.4); /* Полупрозрачный синий поверх серого */
+    transition: width 0.1s linear;
+    z-index: 2;
+    mix-blend-mode: multiply; /* Эффект наложения на серые столбики */
+}
+
+/* Альтернативный способ покраски активной части для лучшего вида */
+.voice-message-player.playing .waveform-bar {
+    animation: wave-pulse 1s infinite alternate ease-in-out;
+}
+
+@keyframes wave-pulse {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
 }
 
 .time-display {
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--hint-color);
-    margin-top: 5px;
+    min-width: 35px;
     text-align: right;
 }
 
-/* Ползунок плеера */
-input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 4px;
-    background: #d3d3d3;
-    border-radius: 2px;
-    outline: none;
-    margin: 0;
-}
-input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--btn-color);
-    cursor: pointer;
-}
-input[type="range"]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--btn-color);
-    cursor: pointer;
-    border: none;
-}
+/* ========================================= */
+/* BUTTONS & RECORDING                       */
+/* ========================================= */
 
-/* Buttons & Inputs */
 .main-btn {
     background-color: var(--btn-color);
     color: var(--btn-text);
@@ -172,7 +201,6 @@ input[type="range"]::-moz-range-thumb {
     border-radius: 4px;
 }
 
-/* Visualizer */
 .visualizer { height: 30px; display: flex; justify-content: center; gap: 4px; margin-bottom: 10px; opacity: 0; }
 .visualizer.active { opacity: 1; }
 .bar { width: 5px; background: var(--btn-color); height: 5px; animation: wave 1s infinite; border-radius: 2px;}
