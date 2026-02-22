@@ -26,7 +26,19 @@
             <div class="chat-area">
                 <div class="audio-wrapper">
                     <p class="label">Вопрос от AI:</p>
-                    <audio id="botPlayer" controls></audio>
+                    
+                    <div class="custom-player">
+                        <button id="playPauseBtn" class="play-pause-btn">▶️</button>
+                        
+                        <div class="progress-container">
+                            <input type="range" id="audioProgress" value="0" min="0" max="100" step="0.1">
+                            <div class="time-display">
+                                <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <audio id="botPlayer" style="display:none"></audio>
                 </div>
             </div>
 
