@@ -1,59 +1,56 @@
-// ==========================================
 // 1. КОНФИГУРАЦИЯ
 // ==========================================
-// Вставь сюда свой Production URL из n8n
 const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';
 
 // ==========================================
 // 2. ИНИЦИАЛИЗАЦИЯ И СОСТОЯНИЕ
 // ==========================================
 const tg = window.Telegram.WebApp;
-tg.expand(); // Разворачиваем на весь экран
+tg.expand();
 
-// Основные переменные состояния
-let currentSessionId = null;  // ID текущей сессии
-let questionNumber = 1;       // Номер текущего вопроса
-let mediaRecorder = null;     // Объект записи звука
-let audioChunks = [];         // Буфер для данных звука
-let isRecording = false;      // Флаг: идет ли запись
+let currentSessionId = null;
+let questionNumber = 1;
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
 
-// Элементы интерфейса (DOM)
 const screens = {
     welcome: document.getElementById('screen-welcome'),
     chat: document.getElementById('screen-chat'),
     result: document.getElementById('screen-result')
 };
+
 const loader = document.getElementById('loader');
 const loaderText = document.getElementById('loaderText');
 const statusText = document.getElementById('statusText');
-const botPlayer = document.getElementById('botPlayer');
 const questionCounterDisplay = document.getElementById('questionCounter');
 const recordBtn = document.getElementById('recordBtn');
 const visualizer = document.getElementById('visualizer');
+
+// Элементы кастомного плеера
+const botPlayer = document.getElementById('botPlayer');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const audioProgress = document.getElementById('audioProgress');
+const currentTimeDisplay = document.getElementById('currentTime');
+const totalTimeDisplay = document.getElementById('totalTime');
 
 // ==========================================
 // 3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ==========================================
 
-// Генерация уникального ID (UUID v4) на клиенте
 function generateUUID() {
-    if (crypto && crypto.randomUUID) {
-        return crypto.randomUUID();
-    }
-    // Фолбэк для старых браузеров
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
 
-// Переключение экранов
 function showScreen(screenId) {
     Object.values(screens).forEach(el => el.classList.add('hidden'));
     screens[screenId].classList.remove('hidden');
 }
 
-// Управление лоадером (крутилкой)
 function toggleLoader(show, text = "Загрузка...") {
     if (show) {
         loaderText.innerText = text;
@@ -63,60 +60,106 @@ function toggleLoader(show, text = "Загрузка...") {
     }
 }
 
-// Обновление счетчика вопросов в UI
 function updateQuestionCounter() {
     questionCounterDisplay.innerText = `Вопрос #${questionNumber}`;
 }
 
-// Установка аудио в плеер и попытка воспроизведения
+// ==========================================
+// 4. ЛОГИКА КАСТОМНОГО ПЛЕЕРА
+// ==========================================
+
+function formatTime(seconds) {
+    if (!seconds || isNaN(seconds) || !isFinite(seconds)) return '0:00';
+    const min = Math.floor(seconds / 60);
+    const sec = Math.floor(seconds % 60);
+    return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+}
+
+playPauseBtn.addEventListener('click', () => {
+    if (botPlayer.paused) botPlayer.play();
+    else botPlayer.pause();
+});
+
+botPlayer.addEventListener('play', () => playPauseBtn.innerText = '⏸');
+botPlayer.addEventListener('pause', () => playPauseBtn.innerText = '▶️');
+botPlayer.addEventListener('ended', () => {
+    playPauseBtn.innerText = '▶️';
+    audioProgress.value = 0;
+    currentTimeDisplay.innerText = '0:00';
+});
+
+botPlayer.addEventListener('timeupdate', () => {
+    const current = botPlayer.currentTime;
+    const duration = botPlayer.duration;
+    
+    if (duration && isFinite(duration)) {
+        audioProgress.value = (current / duration) * 100;
+        currentTimeDisplay.innerText = formatTime(current);
+        totalTimeDisplay.innerText = formatTime(duration);
+    }
+});
+
+botPlayer.addEventListener('loadedmetadata', () => {
+    if (isFinite(botPlayer.duration)) {
+        totalTimeDisplay.innerText = formatTime(botPlayer.duration);
+    }
+});
+
+audioProgress.addEventListener('input', (e) => {
+    const duration = botPlayer.duration;
+    if (duration && isFinite(duration)) {
+        botPlayer.currentTime = (e.target.value / 100) * duration;
+    }
+});
+
 function setBotAudio(base64) {
     botPlayer.src = `data:audio/mp3;base64,${base64}`;
-    // Пытаемся запустить (может не сработать без клика, но у нас есть controls)
+    
+    // Сбрасываем UI плеера
+    audioProgress.value = 0;
+    currentTimeDisplay.innerText = '0:00';
+    totalTimeDisplay.innerText = '0:00';
+    playPauseBtn.innerText = '▶️';
+
+    // Пытаемся запустить
     botPlayer.play().catch(e => {
-        console.log("Автоплей ограничен браузером, ждем действия пользователя");
+        console.log("Автоплей заблокирован, пользователь нажмет сам");
     });
 }
 
 // ==========================================
-// 4. ЛОГИКА: СТАРТ СЕССИИ
+// 5. ЛОГИКА СЕССИИ И СЕТИ
 // ==========================================
 
+async function sendToN8N(payload) {
+    const res = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    return await res.json();
+}
+
 async function startSession() {
-    toggleLoader(true, "Создаем тренировку...");
+    toggleLoader(true, "Создаем сессию...");
     
-    // 1. Генерируем ID сессии прямо здесь
     currentSessionId = generateUUID();
     questionNumber = 1;
-    
-    console.log("Новая сессия:", currentSessionId);
 
     try {
-        // 2. Отправляем ID в n8n, чтобы он просто записал его в базу
-        // и вернул нам первый аудио-вопрос
-        const payload = {
+        const data = await sendToN8N({
             action: 'start_session',
-            session_id: currentSessionId, // <-- МЫ ДИКТУЕМ ID
+            session_id: currentSessionId,
             userData: tg.initDataUnsafe
-        };
-
-        const response = await fetch(N8N_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
-
-        // 3. Переходим к чату
         showScreen('chat');
         toggleLoader(false);
 
-        // 4. Играем приветственный вопрос
         if (data.audio) {
             setBotAudio(data.audio);
             updateQuestionCounter();
         }
-
     } catch (e) {
         alert("Ошибка старта: " + e.message);
         toggleLoader(false);
@@ -124,7 +167,7 @@ async function startSession() {
 }
 
 // ==========================================
-// 5. ЛОГИКА: ЗАПИСЬ ГОЛОСА
+// 6. ЛОГИКА ЗАПИСИ И ОТПРАВКИ ОТВЕТА
 // ==========================================
 
 recordBtn.addEventListener('click', () => {
@@ -133,42 +176,32 @@ recordBtn.addEventListener('click', () => {
 });
 
 async function startRecording() {
-    // Останавливаем бота, если он говорит
-    botPlayer.pause();
+    botPlayer.pause(); 
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        // Определение формата (важно для iOS)
         let options = { mimeType: 'audio/webm' };
         if (!MediaRecorder.isTypeSupported('audio/webm')) {
-            options = MediaRecorder.isTypeSupported('audio/mp4') 
-                ? { mimeType: 'audio/mp4' } 
-                : undefined;
+            options = MediaRecorder.isTypeSupported('audio/mp4') ? { mimeType: 'audio/mp4' } : undefined;
         }
 
         mediaRecorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream);
         audioChunks = [];
         
-        mediaRecorder.ondataavailable = e => { 
-            if (e.data.size > 0) audioChunks.push(e.data); 
-        };
-
-        // При остановке сразу отправляем
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
         mediaRecorder.onstop = sendVoiceAnswer;
         
         mediaRecorder.start();
         isRecording = true;
         
-        // UI обновления
         recordBtn.classList.add('recording');
         visualizer.classList.add('active');
         statusText.innerText = "Запись идет...";
-        tg.HapticFeedback.impactOccurred('medium');
+        tg.HapticFeedback.impactOccurred('light');
 
     } catch (e) {
-        alert("Нет доступа к микрофону. Проверьте настройки прав.");
-        console.error(e);
+        alert("Нет доступа к микрофону");
     }
 }
 
@@ -177,35 +210,27 @@ function stopRecording() {
         mediaRecorder.stop();
         isRecording = false;
         
-        // UI обновления
         recordBtn.classList.remove('recording');
         visualizer.classList.remove('active');
-        statusText.innerText = "Отправка ответа...";
-        toggleLoader(true, "ИИ слушает...");
+        statusText.innerText = "Отправка...";
+        toggleLoader(true, "ИИ анализирует...");
     }
 }
 
-// ==========================================
-// 6. ЛОГИКА: ОТПРАВКА ОТВЕТА
-// ==========================================
-
 async function sendVoiceAnswer() {
     if (!currentSessionId) {
-        alert("Ошибка: Сессия потеряна. Перезагрузите приложение.");
-        location.reload();
+        alert("Ошибка: Нет сессии!");
         return;
     }
 
-    // Собираем аудио-файл из кусочков
     const mimeType = mediaRecorder.mimeType || 'audio/webm';
     const fileExt = mimeType.includes('mp4') ? 'mp4' : 'webm';
     const audioBlob = new Blob(audioChunks, { type: mimeType });
 
-    // Формируем данные для отправки
     const formData = new FormData();
     formData.append('action', 'submit_answer');
-    formData.append('session_id', currentSessionId); // <-- ID СЕССИИ
-    formData.append('question_number', questionNumber); // <-- НОМЕР ВОПРОСА
+    formData.append('session_id', currentSessionId);
+    formData.append('question_number', questionNumber);
     formData.append('userData', JSON.stringify(tg.initDataUnsafe));
     formData.append('file', audioBlob, `voice.${fileExt}`);
 
@@ -214,43 +239,29 @@ async function sendVoiceAnswer() {
             method: 'POST',
             body: formData
         });
-        
         const data = await response.json();
+        
         handleServerResponse(data);
 
     } catch (e) {
         alert("Ошибка отправки: " + e.message);
-        statusText.innerText = "Нажми, чтобы повторить";
     } finally {
         toggleLoader(false);
     }
 }
 
-// ==========================================
-// 7. ЛОГИКА: ОБРАБОТКА ОТВЕТА СЕРВЕРА
-// ==========================================
-
 function handleServerResponse(data) {
-    
-    // ВАРИАНТ А: Тренировка закончена
     if (data.status === 'finished') {
         showScreen('result');
-        document.getElementById('finalScore').innerText = data.score || "-";
-        document.getElementById('finalFeedback').innerText = data.feedback || "Нет комментария";
+        document.getElementById('finalScore').innerText = data.score;
+        document.getElementById('finalFeedback').innerText = data.feedback;
         tg.HapticFeedback.notificationOccurred('success');
-        return;
-    }
-
-    // ВАРИАНТ Б: Продолжаем (следующий вопрос)
-    if (data.audio) {
-        // Увеличиваем счетчик, так как переходим к следующему шагу
-        questionNumber++;
-        updateQuestionCounter();
-        
-        // Включаем аудио
-        setBotAudio(data.audio);
-        statusText.innerText = "Нажми, чтобы ответить";
-        tg.HapticFeedback.impactOccurred('light');
+    } else {
+        if (data.audio) {
+            questionNumber++;
+            updateQuestionCounter();
+            setBotAudio(data.audio);
+            statusText.innerText = "Нажми, чтобы ответить";
+        }
     }
 }
-
