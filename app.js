@@ -326,7 +326,7 @@ function stopRecording() {
         iconStop.classList.add('hidden');
         visualizer.classList.remove('active');
         statusText.innerText = "Отправка...";
-        toggleLoader(true, "ИИ думает...");
+        toggleLoader(true, "Wait");
     }
 }
 
@@ -365,3 +365,4 @@ async function sendVoiceAnswer() {
         toggleLoader(false);
     }
 }
+
