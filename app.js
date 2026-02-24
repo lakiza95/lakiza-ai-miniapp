@@ -3,6 +3,8 @@
 // 1. КОНФИГУРАЦИЯ
 // ==========================================
 const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';  // <-- ВАШ URL
+// ==========================================
+// 1. КОНФИГУРАЦИ
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -13,7 +15,6 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-// ДОБАВЛЕН ЭКРАН errorProfile
 const screens = { 
     welcome: document.getElementById('screen-welcome'), 
     chat: document.getElementById('screen-chat'), 
@@ -210,9 +211,11 @@ async function loadHistory() {
 async function loadProfile() {
     toggleLoader(true, "Загрузка профиля...");
     try {
-        const data = await sendToN8N({ action: 'get_profile', userData: tg.initDataUnsafe });
-        if (data.name) document.getElementById('profileName').value = data.name;
-        if (data.level) document.getElementById('profileLevel').value = data.level;
+        const rawResponse = await sendToN8N({ action: 'get_profile', userData: tg.initDataUnsafe });
+        const data = Array.isArray(rawResponse) ? rawResponse[0] : rawResponse;
+        
+        if (data && data.name && data.name !== "null") document.getElementById('profileName').value = data.name;
+        if (data && data.level && data.level !== "null") document.getElementById('profileLevel').value = data.level;
     } catch (e) {
         console.log("Профиль не найден или ошибка сети");
     } finally {
@@ -258,16 +261,22 @@ async function startSession() {
     toggleLoader(true, "Проверка профиля...");
 
     try {
-        const profileData = await sendToN8N({ 
+        const rawResponse = await sendToN8N({ 
             action: 'get_profile', 
             userData: tg.initDataUnsafe 
         });
 
-        // ИЗМЕНЕНИЕ: Теперь показываем кастомный экран ошибки вместо alert
-        if (!profileData || !profileData.name || !profileData.level || profileData.status === 'not_found' || profileData.status === 'new_user') {
+        // Жесткая проверка всех видов "пустоты"
+        const profileData = Array.isArray(rawResponse) ? rawResponse[0] : rawResponse;
+        
+        const isNameInvalid = !profileData || !profileData.name || String(profileData.name).trim() === "" || String(profileData.name) === "null" || String(profileData.name) === "undefined";
+        const isLevelInvalid = !profileData || !profileData.level || String(profileData.level).trim() === "" || String(profileData.level) === "null" || String(profileData.level) === "undefined";
+        const isStatusNotFound = profileData && (profileData.status === 'not_found' || profileData.status === 'new_user');
+
+        if (isStatusNotFound || isNameInvalid || isLevelInvalid) {
             toggleLoader(false);
             tg.HapticFeedback.notificationOccurred('warning');
-            showScreen('errorProfile'); // <-- Переключаем на экран ошибки профиля
+            showScreen('errorProfile'); 
             return; 
         }
 
