@@ -22,6 +22,17 @@
             </div>
         </div>
 
+        <div id="screen-error-profile" class="screen hidden">
+            <div class="icon-header">⚠️</div>
+            <h3>Профиль не заполнен</h3>
+            <p>Вы не заполнили профиль. Для начала тренировки необходимо указать ваше имя и уровень языка.</p>
+            
+            <div class="action-buttons">
+                <button class="main-btn" onclick="showScreen('profile')">Заполнить профиль</button>
+                <button class="secondary-btn" onclick="showScreen('welcome')">На главную</button>
+            </div>
+        </div>
+
         <div id="screen-profile" class="screen hidden">
             <div class="top-bar">
                 <span>Ваш профиль</span>
