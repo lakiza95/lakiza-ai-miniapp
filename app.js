@@ -1,5 +1,8 @@
 
-const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe'; // <-- ВАШ URL
+// ==========================================
+// 1. КОНФИГУРАЦИЯ
+// ==========================================
+const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';  // <-- ВАШ URL
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -10,12 +13,14 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
+// ДОБАВЛЕН ЭКРАН errorProfile
 const screens = { 
     welcome: document.getElementById('screen-welcome'), 
     chat: document.getElementById('screen-chat'), 
     result: document.getElementById('screen-result'),
     history: document.getElementById('screen-history'),
-    profile: document.getElementById('screen-profile')
+    profile: document.getElementById('screen-profile'),
+    errorProfile: document.getElementById('screen-error-profile') 
 };
 
 const chatHistory = document.getElementById('chatHistory');
@@ -253,21 +258,19 @@ async function startSession() {
     toggleLoader(true, "Проверка профиля...");
 
     try {
-        // 1. Проверяем заполненность профиля перед стартом
         const profileData = await sendToN8N({ 
             action: 'get_profile', 
             userData: tg.initDataUnsafe 
         });
 
+        // ИЗМЕНЕНИЕ: Теперь показываем кастомный экран ошибки вместо alert
         if (!profileData || !profileData.name || !profileData.level || profileData.status === 'not_found' || profileData.status === 'new_user') {
             toggleLoader(false);
             tg.HapticFeedback.notificationOccurred('warning');
-            alert("Перед началом тренировки, пожалуйста, заполните ваш профиль!");
-            showScreen('profile'); 
+            showScreen('errorProfile'); // <-- Переключаем на экран ошибки профиля
             return; 
         }
 
-        // 2. Профиль есть — начинаем сессию
         toggleLoader(true, "Создаем сессию...");
         currentSessionId = generateUUID();
         questionNumber = 1;
