@@ -1,8 +1,5 @@
 
-// ==========================================
-// 1. КОНФИГУРАЦИЯ
-// ==========================================
-const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe';// <-- ВАШ URL// <-- ВАШ URL
+const N8N_WEBHOOK_URL = 'https://lakiza.n-8n.com/webhook/test123weqwe'; // <-- ВАШ URL
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -18,7 +15,7 @@ const screens = {
     chat: document.getElementById('screen-chat'), 
     result: document.getElementById('screen-result'),
     history: document.getElementById('screen-history'),
-    profile: document.getElementById('screen-profile') // <-- Добавлен экран профиля
+    profile: document.getElementById('screen-profile')
 };
 
 const chatHistory = document.getElementById('chatHistory');
@@ -170,6 +167,15 @@ masterPlayer.addEventListener('loadedmetadata', () => {
 // 5. ИСТОРИЯ И ПРОФИЛЬ
 // ==========================================
 
+async function sendToN8N(payload) {
+    const res = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    return await res.json();
+}
+
 async function loadHistory() {
     toggleLoader(true, "Загрузка истории...");
     
@@ -196,16 +202,13 @@ async function loadHistory() {
     }
 }
 
-// Загрузка профиля (опционально, чтобы форма предзаполнялась)
 async function loadProfile() {
     toggleLoader(true, "Загрузка профиля...");
     try {
-        // Пытаемся получить профиль, если он уже есть
         const data = await sendToN8N({ action: 'get_profile', userData: tg.initDataUnsafe });
         if (data.name) document.getElementById('profileName').value = data.name;
         if (data.level) document.getElementById('profileLevel').value = data.level;
     } catch (e) {
-        // Если база пустая или ошибка сети — просто открываем пустую форму
         console.log("Профиль не найден или ошибка сети");
     } finally {
         toggleLoader(false);
@@ -213,7 +216,6 @@ async function loadProfile() {
     }
 }
 
-// Сохранение профиля
 async function saveProfile() {
     const name = document.getElementById('profileName').value.trim();
     const level = document.getElementById('profileLevel').value;
@@ -243,27 +245,34 @@ async function saveProfile() {
     }
 }
 
-
 // ==========================================
 // 6. ЛОГИКА СЕССИИ (START & SEND)
 // ==========================================
 
-async function sendToN8N(payload) {
-    const res = await fetch(N8N_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    return await res.json();
-}
-
 async function startSession() {
-    toggleLoader(true, "Создаем сессию...");
-    currentSessionId = generateUUID();
-    questionNumber = 1;
-    chatHistory.innerHTML = ''; 
+    toggleLoader(true, "Проверка профиля...");
 
     try {
+        // 1. Проверяем заполненность профиля перед стартом
+        const profileData = await sendToN8N({ 
+            action: 'get_profile', 
+            userData: tg.initDataUnsafe 
+        });
+
+        if (!profileData || !profileData.name || !profileData.level || profileData.status === 'not_found' || profileData.status === 'new_user') {
+            toggleLoader(false);
+            tg.HapticFeedback.notificationOccurred('warning');
+            alert("Перед началом тренировки, пожалуйста, заполните ваш профиль!");
+            showScreen('profile'); 
+            return; 
+        }
+
+        // 2. Профиль есть — начинаем сессию
+        toggleLoader(true, "Создаем сессию...");
+        currentSessionId = generateUUID();
+        questionNumber = 1;
+        chatHistory.innerHTML = ''; 
+
         const data = await sendToN8N({
             action: 'start_session',
             session_id: currentSessionId,
@@ -326,7 +335,7 @@ function stopRecording() {
         iconStop.classList.add('hidden');
         visualizer.classList.remove('active');
         statusText.innerText = "Отправка...";
-        toggleLoader(true, "Wait");
+        toggleLoader(true, "ИИ думает...");
     }
 }
 
@@ -365,4 +374,3 @@ async function sendVoiceAnswer() {
         toggleLoader(false);
     }
 }
-
